@@ -36,8 +36,10 @@ let PaddleCategory : UInt32 = 0x1 << 3
 let BorderCategory : UInt32 = 0x1 << 4
 
 
-class GameScene: SKScene {
+class GameScene: SKScene, SKPhysicsContactDelegate {
     var isFingerOnPaddle = false
+    
+    
   
   override func didMove(to view: SKView) {
     super.didMove(to: view)
@@ -45,11 +47,86 @@ class GameScene: SKScene {
     borderBody.friction = 0
     self.physicsBody = borderBody
     
+    let bottomRect = CGRect(x: frame.origin.x, y: frame.origin.y, width: frame.size.width, height: 1)
+    let bottom = SKNode()
+    bottom.physicsBody = SKPhysicsBody(edgeLoopFrom: bottomRect)
+    addChild(bottom)
+    
+    let paddle = childNode(withName: PaddleCategoryName) as! SKSpriteNode
+    
     physicsWorld.gravity = CGVector(dx: 0.0, dy: 0.0)
+    physicsWorld.contactDelegate = self
     
     let ball = childNode(withName: BallCategoryName) as! SKSpriteNode
     ball.physicsBody!.applyImpulse(CGVector(dx: 2.0, dy: -2.0))
+    
+    bottom.physicsBody!.categoryBitMask = BottomCategory
+    ball.physicsBody!.categoryBitMask = BallCategory
+    paddle.physicsBody!.categoryBitMask = PaddleCategory
+    borderBody.categoryBitMask = BorderCategory
+    ball.physicsBody!.contactTestBitMask = BottomCategory | BlockCategory
+    
+    let numberOfBlocks = 8
+    let blockWidth = SKSpriteNode(imageNamed: "block").size.width
+    let totalBlocksWidth = blockWidth * CGFloat(numberOfBlocks)
+    
+    let xOffset = (frame.width - totalBlocksWidth)/2
+    
+    for i in 0..<numberOfBlocks{
+        let block = SKSpriteNode(imageNamed: "block.png")
+        block.position = CGPoint(x: xOffset + CGFloat(CGFloat(i) + 0.5) * blockWidth,
+            y:frame.height * 0.8)
+        
+        block.physicsBody = SKPhysicsBody(rectangleOf: block.frame.size)
+        block.physicsBody!.allowsRotation = false
+        block.physicsBody!.friction = 0.0
+        block.physicsBody!.affectedByGravity = false
+        block.physicsBody!.isDynamic = false
+        block.name = BlockCategoryName
+        block.physicsBody!.categoryBitMask = BlockCategory
+        block.zPosition = 2
+        addChild(block)
+    }
+    
   }
+    
+    func breakBlock(node: SKNode){
+        let particles = SKEmitterNode(fileNamed:"BrokenPlatform")!
+        particles.position = node.position
+        particles.zPosition = 3
+        addChild(particles)
+        particles.run(SKAction.sequence([SKAction.wait(forDuration: 1.0),
+            SKAction.removeFromParent()]))
+        node.removeFromParent()
+    }
+    
+    
+    func didBegin(_ contact:SKPhysicsContact){
+        
+        var firstBody: SKPhysicsBody
+        var secondBody: SKPhysicsBody
+        
+        if contact.bodyA.categoryBitMask < contact.bodyB.categoryBitMask{
+            firstBody = contact.bodyA
+            secondBody = contact.bodyB
+            
+        }else{
+            firstBody = contact.bodyB
+            secondBody = contact.bodyA
+        }
+        if firstBody.categoryBitMask == BallCategory && secondBody.categoryBitMask == BottomCategory{
+            print("First Contact with bottom has been made")
+            
+        }
+        if firstBody.categoryBitMask == BallCategory && secondBody.categoryBitMask ==
+            BlockCategory{
+            breakBlock(node: secondBody.node!)
+        }
+    }
+    
+    
+    
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?){
         let touch = touches.first
         let touchLocation = touch!.location(in: self)
