@@ -86,17 +86,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     ball.physicsBody!.contactTestBitMask = BottomCategory | BlockCategory | BorderCategory | PaddleCategory
     
     let numberOfBlocks = 8
-    //let NOB2 = numberOfBlocks * 2
+    let NOB2 = numberOfBlocks * 2
+    let NOB3 = numberOfBlocks * 3
     let blockWidth = SKSpriteNode(imageNamed: "block").size.width
     // add in a height to make more layers
     let totalBlocksWidth = blockWidth * CGFloat(numberOfBlocks)
     
     let xOffset = (frame.width - totalBlocksWidth)/2
     
-    for i in 0..<numberOfBlocks {
+    for i in 0..<NOB3 {
         let block = SKSpriteNode(imageNamed: "block.png")
+        if i < numberOfBlocks{
         block.position = CGPoint(x: xOffset + CGFloat(CGFloat(i) + 0.5) * blockWidth , y:frame.height * 0.8)
-        
+        }else if (i >= numberOfBlocks && i < NOB2) {
+            block.position = CGPoint(x: xOffset + CGFloat(CGFloat(i-numberOfBlocks) + 0.5) * blockWidth , y:frame.height * 0.85)
+        }else{
+            block.position = CGPoint(x: xOffset + CGFloat(CGFloat(i-NOB2) + 0.5) * blockWidth , y:frame.height * 0.9)
+        }
         block.physicsBody = SKPhysicsBody(rectangleOf: block.frame.size)
         block.physicsBody!.allowsRotation = false
         block.physicsBody!.friction = 0.0
